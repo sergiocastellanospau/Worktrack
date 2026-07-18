@@ -141,10 +141,10 @@ body {
 
 /* ── USER CARD ── */
 .user-card {
-  margin: 0 20px 16px;
+  margin: 0 16px 14px;
   background: var(--user-card-bg, var(--tint));
   border-radius: var(--r-xl);
-  padding: 16px 18px 18px;
+  padding: 14px 16px;
   display: flex; align-items: center; justify-content: space-between;
 }
 .user-avatar { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; }
@@ -445,8 +445,8 @@ body {
   <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyAyE31t8SRGlS_yXSmDnspFxlviO818ZzA",
@@ -472,6 +472,9 @@ body {
     window.fbSetDoc = setDoc;
     window.fbOnSnapshot = onSnapshot;
     window.fbGetDoc = getDoc;
+    window.fbUpdatePassword = updatePassword;
+    window.fbCollection = collection;
+    window.fbGetDocs = getDocs;
 
     // Auth state listener
     onAuthStateChanged(auth, user => {
@@ -481,6 +484,7 @@ body {
         document.getElementById('resetScreen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         document.querySelector('.tab-bar').style.display = 'flex';
+        initBiometric();
         document.querySelector('.fab').style.display = 'flex';
         window.startFirebaseSync(user.uid);
         // Register biometric after login
@@ -607,35 +611,37 @@ body {
 
 <!-- ══ USER CARD ══ -->
 <div class="user-card">
-  <div style="display:flex;align-items:flex-start;width:100%;gap:14px">
-    <!-- Left: avatar + name + project + date -->
-    <div class="user-avatar" id="userAvatar">SC</div>
+  <!-- Row 1: avatar + name + lang -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div class="user-avatar" id="userAvatar" style="flex-shrink:0;width:38px;height:38px;font-size:14px">SC</div>
     <div style="flex:1;min-width:0">
-      <div class="user-name" id="userName">Sergio Castellanos</div>
-      <div class="user-project" id="userProject">📁 Agenda · Eduardo Peñuela</div>
-      <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.55);line-height:1.3" id="clockBadge"></div>
+      <div class="user-name" id="userName" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Sergio Castellanos</div>
+      <div class="user-project" id="userProject" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📁 Agenda · Eduardo Peñuela</div>
     </div>
-    <!-- Right: lang + actions in one row -->
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-      <div class="lang-seg">
-        <button class="lang-btn active" onclick="setLang('es')">ES</button>
-        <button class="lang-btn" onclick="setLang('en')">EN</button>
-      </div>
-      <div style="display:flex;gap:5px">
-        <button class="user-card-btn" onclick="openSheet('project')" title="Editar">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Editar
-        </button>
-        <button class="user-card-btn" onclick="exportData()" title="Exportar">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Exportar
-        </button>
-        <label class="user-card-btn" style="cursor:pointer" title="Importar">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Importar
-          <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display:none">
-        </label>
-      </div>
+    <div class="lang-seg" style="flex-shrink:0">
+      <button class="lang-btn active" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+  <!-- Row 2: date + action buttons -->
+  <div style="display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="clockBadge"></div>
+    </div>
+    <div style="display:flex;gap:5px;flex-shrink:0">
+      <button class="user-card-btn" onclick="openSheet('project')" title="Editar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+      <button class="user-card-btn" onclick="exportData()" title="Exportar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Exportar
+      </button>
+      <label class="user-card-btn" style="cursor:pointer" title="Importar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Importar
+        <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display:none">
+      </label>
     </div>
   </div>
 </div>
@@ -737,6 +743,55 @@ body {
 
 </div><!-- /app -->
 
+<!-- ADMIN -->
+<div class="screen" id="screen-adm">
+  <!-- My account section -->
+  <div style="padding:16px 16px 8px"><div class="sec-label">MI CUENTA</div></div>
+  <div class="list-group" style="margin:0 16px 20px">
+    <div class="list-row" onclick="openAdmSheet('name')">
+      <div class="list-row-icon" style="background:var(--tint-bg)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="list-row-content"><div class="list-row-title">Mi nombre</div><div class="list-row-sub" id="admMyName">Sergio Castellanos</div></div>
+      <span class="chevron">›</span>
+    </div>
+    <div class="list-row" onclick="openAdmSheet('agenda')">
+      <div class="list-row-icon" style="background:var(--tint-bg)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="2" stroke-linecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
+      </div>
+      <div class="list-row-content"><div class="list-row-title">Nombre de mi agenda</div><div class="list-row-sub" id="admMyAgenda">Eduardo Peñuela</div></div>
+      <span class="chevron">›</span>
+    </div>
+    <div class="list-row" onclick="openAdmSheet('password')">
+      <div class="list-row-icon" style="background:var(--tint-bg)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="list-row-content"><div class="list-row-title">Cambiar contraseña</div></div>
+      <span class="chevron">›</span>
+    </div>
+  </div>
+
+  <!-- Reset -->
+  <div style="padding:0 16px 8px"><div class="sec-label">DATOS</div></div>
+  <div class="list-group" style="margin:0 16px 20px">
+    <div class="list-row" onclick="resetApp()" style="cursor:pointer">
+      <div class="list-row-icon" style="background:rgba(255,59,48,.1)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--destructive)" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.75"/></svg>
+      </div>
+      <div class="list-row-content"><div class="list-row-title" style="color:var(--destructive)">Reiniciar aplicación</div><div class="list-row-sub">Borra todas las actividades y datos</div></div>
+    </div>
+  </div>
+
+  <!-- Admin-only: Users section -->
+  <div id="admUsersSection" style="display:none">
+    <div style="padding:0 16px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div class="sec-label" style="padding:0">USUARIOS</div>
+      <button onclick="openAdmSheet('newuser')" style="background:var(--tint);color:#fff;border:none;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer">+ Nuevo</button>
+    </div>
+    <div id="admUsersList" style="margin:0 16px 20px"></div>
+  </div>
+</div>
+
 <!-- ══ TAB BAR ══ -->
 <div class="tab-bar">
   <button class="tab-item active" onclick="goTab('cal',this)" id="tab-cal">
@@ -758,6 +813,10 @@ body {
   <button class="tab-item" onclick="goTab('arc',this)" id="tab-arc">
     <span class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>
     <span class="tab-label" id="tl-arc">Archivo</span>
+  </button>
+  <button class="tab-item" onclick="goTab('adm',this)" id="tab-adm">
+    <span class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+    <span class="tab-label" id="tl-adm">Admin</span>
   </button>
 </div>
 
@@ -919,7 +978,7 @@ body {
 /* ══ TRANSLATIONS ══ */
 const TX = {
   es: {
-    tabs: ['Calendario','Registro','Finanzas','Semanal','Archivo'],
+    tabs: ['Calendario','Registro','Finanzas','Semanal','Archivo','Admin'],
     months: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
     days: ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
     daysFull: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
@@ -953,7 +1012,7 @@ const TX = {
     btnPago: '💳 Registrar pago', btnPdf: '📄 PDF Eduardo',
   },
   en: {
-    tabs: ['Calendar','Log','Finances','Weekly','Archive'],
+    tabs: ['Calendar','Log','Finances','Weekly','Archive','Admin'],
     months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
     days: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
     daysFull: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
@@ -1070,7 +1129,7 @@ function setLang(l) {
   applyT(); renderCal(); renderReg(); populateMonSel(); renderSem(); renderFin(); renderArc();
 }
 function applyT() {
-  const tabs = ['cal','reg','fin','sem','arc'];
+  const tabs = ['cal','reg','fin','sem','arc','adm'];
   tabs.forEach((id,i) => { const el = document.getElementById('tl-'+id); if(el) el.textContent = tx('tabs')[i]; });
   const ids = {
     'fo-all':'foAll','fo-pend':'foPend','fo-paid':'foPaid',
@@ -1112,6 +1171,7 @@ function goTab(id, btn) {
   if(id==='fin') renderFin();
   if(id==='sem') { populateMonSel(); renderSem(); }
   if(id==='arc') renderArc();
+  if(id==='adm') renderAdm();
 }
 
 /* ══ CALENDAR ══ */
@@ -2030,6 +2090,205 @@ function saveDB() {
   }
 }
 
+/* ══ ADMIN ══ */
+const ADMIN_EMAIL = 'sergiocastellanosp@hotmail.com';
+let admSheetMode = '';
+
+function renderAdm() {
+  const proj = JSON.parse(localStorage.getItem('wt_project') || '{}');
+  const el = document.getElementById('admMyName');
+  if(el) el.textContent = proj.name || 'Sergio Castellanos';
+  const el2 = document.getElementById('admMyAgenda');
+  if(el2) el2.textContent = proj.project || 'Eduardo Peñuela';
+  // Show admin section only for admin user
+  const isAdmin = window.currentUser && window.currentUser.email === ADMIN_EMAIL;
+  const adminSec = document.getElementById('admUsersSection');
+  if(adminSec) adminSec.style.display = isAdmin ? 'block' : 'none';
+  if(isAdmin) loadAdminUsers();
+}
+
+function openAdmSheet(mode) {
+  admSheetMode = mode;
+  const title = document.getElementById('adm-sheet-title');
+  const body = document.getElementById('adm-sheet-body');
+  const proj = JSON.parse(localStorage.getItem('wt_project') || '{}');
+
+  if(mode === 'name') {
+    title.textContent = 'Mi nombre';
+    body.innerHTML = `
+      <div class="field-group">
+        <div class="field-row">
+          <label class="field-label">Nombre</label>
+          <input type="text" class="field-input" id="adm-inp" value="${proj.name || 'Sergio Castellanos'}" placeholder="Tu nombre">
+        </div>
+      </div>`;
+  } else if(mode === 'agenda') {
+    title.textContent = 'Nombre de agenda';
+    body.innerHTML = `
+      <div class="field-group">
+        <div class="field-row">
+          <label class="field-label">Agenda</label>
+          <input type="text" class="field-input" id="adm-inp" value="${proj.project || 'Eduardo Peñuela'}" placeholder="Nombre del cliente o proyecto">
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--label2);padding:8px 4px">Este nombre aparece en el recuadro azul y en los PDFs.</p>`;
+  } else if(mode === 'password') {
+    title.textContent = 'Cambiar contraseña';
+    body.innerHTML = `
+      <div class="field-group">
+        <div class="field-row">
+          <label class="field-label">Nueva contraseña</label>
+          <input type="password" class="field-input" id="adm-inp" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="field-row">
+          <label class="field-label">Confirmar</label>
+          <input type="password" class="field-input" id="adm-inp2" placeholder="Repite la contraseña">
+        </div>
+      </div>`;
+  } else if(mode === 'newuser') {
+    title.textContent = 'Nuevo usuario';
+    body.innerHTML = `
+      <div class="field-group">
+        <div class="field-row">
+          <label class="field-label">Nombre</label>
+          <input type="text" class="field-input" id="nu-name" placeholder="Ej: Juanito Pérez">
+        </div>
+        <div class="field-row">
+          <label class="field-label">Email</label>
+          <input type="email" class="field-input" id="nu-email" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="field-row">
+          <label class="field-label">Contraseña</label>
+          <input type="password" class="field-input" id="nu-pwd" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="field-row">
+          <label class="field-label">Nombre de agenda</label>
+          <input type="text" class="field-input" id="nu-agenda" placeholder="Ej: Mi cliente">
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--label2);padding:8px 4px">El usuario podrá ingresar con este email y contraseña. Su agenda estará completamente separada.</p>
+      <div id="nu-error" style="display:none;background:var(--bad);color:var(--badt);border-radius:var(--r);padding:10px 14px;font-size:13px;margin-top:8px"></div>`;
+  }
+  document.getElementById('ov-adm').classList.add('open');
+  setTimeout(() => { const inp = document.getElementById('adm-inp'); if(inp) inp.focus(); }, 200);
+}
+
+async function saveAdmSheet() {
+  if(admSheetMode === 'name') {
+    const val = document.getElementById('adm-inp').value.trim();
+    if(!val) return;
+    const proj = JSON.parse(localStorage.getItem('wt_project') || '{}');
+    proj.name = val;
+    localStorage.setItem('wt_project', JSON.stringify(proj));
+    loadProject(); renderAdm(); closeSheet('adm');
+
+  } else if(admSheetMode === 'agenda') {
+    const val = document.getElementById('adm-inp').value.trim();
+    if(!val) return;
+    const proj = JSON.parse(localStorage.getItem('wt_project') || '{}');
+    proj.project = val;
+    localStorage.setItem('wt_project', JSON.stringify(proj));
+    loadProject(); renderAdm(); closeSheet('adm');
+
+  } else if(admSheetMode === 'password') {
+    const p1 = document.getElementById('adm-inp').value;
+    const p2 = document.getElementById('adm-inp2').value;
+    if(!p1 || p1.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if(p1 !== p2) { alert('Las contraseñas no coinciden.'); return; }
+    try {
+      await window.fbUpdatePassword(window.currentUser, p1);
+      sessionStorage.setItem('wt_session_pwd', p1);
+      closeSheet('adm');
+      alert('✅ Contraseña actualizada.');
+    } catch(e) {
+      if(e.code === 'auth/requires-recent-login') {
+        alert('Por seguridad, cierra sesión y vuelve a ingresar antes de cambiar la contraseña.');
+      } else {
+        alert('Error: ' + e.message);
+      }
+    }
+
+  } else if(admSheetMode === 'newuser') {
+    const name = document.getElementById('nu-name').value.trim();
+    const email = document.getElementById('nu-email').value.trim();
+    const pwd = document.getElementById('nu-pwd').value;
+    const agenda = document.getElementById('nu-agenda').value.trim();
+    const errEl = document.getElementById('nu-error');
+    if(!name || !email || !pwd || !agenda) { errEl.textContent='Completa todos los campos.'; errEl.style.display='block'; return; }
+    if(pwd.length < 6) { errEl.textContent='La contraseña debe tener al menos 6 caracteres.'; errEl.style.display='block'; return; }
+    errEl.style.display='none';
+    try {
+      // Create user via Firebase Auth REST API (doesn't sign out current user)
+      const apiKey = 'AIzaSyAyE31t8SRGlS_yXSmDnspFxlviO818ZzA';
+      const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({email, password:pwd, returnSecureToken:true})
+      });
+      const data = await res.json();
+      if(data.error) { errEl.textContent=data.error.message; errEl.style.display='block'; return; }
+      const newUid = data.localId;
+      // Save user profile in Firestore
+      const docRef = window.fbDoc(window.fbDb, 'users', newUid, 'data', 'worktrack');
+      await window.fbSetDoc(docRef, {
+        db: { activities:[], gastos:[], pagos:[], nextId:1, nextGId:1, nextPId:1 },
+        updatedAt: Date.now(),
+        profile: { name, project: agenda, email },
+        createdBy: ADMIN_EMAIL
+      });
+      // Save in admin registry
+      const regRef = window.fbDoc(window.fbDb, 'admin', 'users', 'list', newUid);
+      await window.fbSetDoc(regRef, { name, email, agenda, uid:newUid, createdAt: Date.now() });
+      closeSheet('adm');
+      alert(`✅ Usuario "${name}" creado correctamente.\n\nEmail: ${email}\nContraseña: ${pwd}`);
+      loadAdminUsers();
+    } catch(e) {
+      errEl.textContent = 'Error al crear usuario: ' + e.message;
+      errEl.style.display = 'block';
+    }
+  }
+}
+
+async function loadAdminUsers() {
+  const listEl = document.getElementById('admUsersList');
+  if(!listEl) return;
+  listEl.innerHTML = '<div style="padding:16px;color:var(--label2);font-size:14px;text-align:center">Cargando...</div>';
+  try {
+    const snap = await window.fbGetDocs(window.fbCollection(window.fbDb, 'admin', 'users', 'list'));
+    if(snap.empty) {
+      listEl.innerHTML = '<div class="list-group"><div class="list-row"><div class="list-row-content"><div class="list-row-title" style="color:var(--label2)">Sin usuarios adicionales</div></div></div></div>';
+      return;
+    }
+    const grp = document.createElement('div'); grp.className='list-group';
+    snap.forEach(doc => {
+      const u = doc.data();
+      const row = document.createElement('div'); row.className='list-row';
+      row.innerHTML = `
+        <div class="list-row-icon" style="background:var(--fill3)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--label2)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div class="list-row-content">
+          <div class="list-row-title">${u.name}</div>
+          <div class="list-row-sub">${u.email} · ${u.agenda}</div>
+        </div>`;
+      grp.appendChild(row);
+    });
+    listEl.innerHTML=''; listEl.appendChild(grp);
+  } catch(e) {
+    listEl.innerHTML = '<div class="list-group"><div class="list-row"><div class="list-row-content"><div class="list-row-sub">Error cargando usuarios</div></div></div></div>';
+  }
+}
+
+function resetApp() {
+  if(!confirm('⚠️ ¿Estás seguro? Esto borrará TODAS las actividades, gastos y pagos. Esta acción no se puede deshacer.')) return;
+  if(!confirm('Confirma una vez más: ¿borrar todos los datos?')) return;
+  DB = { activities:[], gastos:[], pagos:[], nextId:1, nextGId:1, nextPId:1 };
+  saveDB();
+  renderCal(); renderReg(); renderFin(); renderArc(); populateMonSel();
+  goTab('cal', document.getElementById('tab-cal'));
+  alert('✅ Aplicación reiniciada.');
+}
+
 /* ══ INIT ══ */
 applyTheme();
 applyT();
@@ -2041,5 +2300,17 @@ initBiometric();
 
 
 </script>
+
+<!-- ══ SHEET: ADMIN ══ -->
+<div class="overlay" id="ov-adm" onclick="if(event.target===this)closeSheet('adm')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="adm-sheet-title">Editar</span>
+      <button class="sheet-done" onclick="saveAdmSheet()">Listo</button>
+    </div>
+    <div class="sheet-body" id="adm-sheet-body"></div>
+  </div>
+</div>
 </body>
 </html>
